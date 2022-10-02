@@ -1,7 +1,7 @@
 # Cosmos forks autoupgrade script
 Script for catching info from upgrade proposals and make upgrade at needeed height
 
-Change params, add to crontab.
+Change params in CONFIG ZONE, add to crontab.
 ```
 */5 * * * * bash $HOME/upgrade.sh >> $HOME/upgrade.log 2>&1
 ```
