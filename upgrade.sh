@@ -43,7 +43,7 @@ if [[ -n ${upgrade_height} ]] && [[ ${current_height} -gt ${upgrade_height}-${PR
                 echo "Current height: ${current_height}, will upgrade to ${upgrade_name} at height: ${upgrade_height}"
                 if [[ ${current_height} -eq ${upgrade_height} ]]; then
                         echo "Upgrade height has come, upgrading..."
-                        rm ${UPGRADE_PATH}/current && echo "Old symbolic link to binary removed"
+                        rm -rf ${UPGRADE_PATH}/current && echo "Old symbolic link to binary removed"
                         ln -s ${UPGRADE_PATH}/${upgrade_name} ${UPGRADE_PATH}/current && echo "New symbolic link to binary version ${upgrade_name} was set"
                         sudo systemctl restart ${SERVICE} && echo "Service ${SERVICE} restarted" || echo "ERROR: service ${SERVICE} NOT restarted!"
                         sleep 30
