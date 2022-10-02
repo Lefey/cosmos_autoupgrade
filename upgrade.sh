@@ -20,11 +20,16 @@ if [[ -n ${voting_upgrade_proposal} ]]; then
 #        curl -s -X POST -H 'Content-Type: application/json' -d '{"chat_id":"'"${CHAT_ID}"'", "text": "'"${voting_upgrade_proposal_info}"'", "parse_mode": "html"}' https://api.telegram.org/bot$BOT_KEY/sendMessage > /dev/null 2>&1
 fi
 if [[ -n ${upgrade_height} ]] && [[ ${current_height} -gt ${upgrade_height}-${PREP_OFFSET} ]] && [[ ${current_height} -lt ${upgrade_height} ]]; then
-        echo "Start upgrade preparations"
         upgrade_binary=$(echo ${passed_upgrade_proposal}|jq -r '.content.plan.info'|jq -r ".binaries.\"linux/"$(dpkg-architecture -q DEB_BUILD_ARCH)\")
         upgrade_name=$(echo ${passed_upgrade_proposal}|jq -r '.content.plan.name')
-        curl -s -X POST -H 'Content-Type: application/json' \
-        -d '{"chat_id":"'"${CHAT_ID}"'", "text": "New upgrade '"${upgrade_name}"' will be applied at '"${upgrade_height}"', current height '"${current_height}"' ", "parse_mode": "html"}' https://api.telegram.org/bot$BOT_KEY/sendMessage > /dev/null 2>&1
+        if [[ -z ${upgrade_binary} ]]; then
+                echo "No binary for current system arch in upgrade plan, need manual upgrade!"
+                curl -s -X POST -H 'Content-Type: application/json' -d '{"chat_id":"'"${CHAT_ID}"'", "text": "No binary for current system architecture in upgrade proposal plan to version '"${upgrade_name}"', need manual upgrade! Upgrade will be at height '"${upgrade_height}"', current height '"${current_height}"'", "parse_mode": "html"}' https://api.telegram.org/bot$BOT_KEY/sendMessage > /dev/null 2>&1
+                exit 1
+        else
+                curl -s -X POST -H 'Content-Type: application/json' -d '{"chat_id":"'"${CHAT_ID}"'", "text": "New upgrade '"${upgrade_name}"' will be applied at '"${upgrade_height}"', current height '"${current_height}"' ", "parse_mode": "html"}' https://api.telegram.org/bot$BOT_KEY/sendMessage > /dev/null 2>&1
+                echo "Start upgrade preparations"
+        fi
         echo "Download link: ${upgrade_binary}"
         mkdir -p ${UPGRADE_PATH}/${upgrade_name} && echo "Make new folder for upgrade: ${UPGRADE_PATH}/${upgrade_name}" || echo "ERROR creating dir ${UPGRADE_PATH}/${upgrade_name}"
         wget -q ${upgrade_binary} -O ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz && echo "Downloaded upgrade file to ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz" || echo "ERROR downloading upgrade file"
@@ -36,7 +41,7 @@ if [[ -n ${upgrade_height} ]] && [[ ${current_height} -gt ${upgrade_height}-${PR
                 rm ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz
         else
                 echo "ERROR: sha256sum of downloaded file is NOT OK"
-                exit 0
+                exit 1
         fi
         for ((;;)); do
                 current_height=$(${BIN} status|jq -r '.SyncInfo.latest_block_height')
