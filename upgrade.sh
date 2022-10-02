@@ -6,7 +6,7 @@ UPGRADE_PATH="/root/.gaia/upgrades"
 SERVICE="gaiad.service"
 CHAT_ID="11223344" # telegram chat id
 BOT_KEY="1122334455:Aabb..." # telegram bot token
-PREP_OFFSET=50 # number of blocks before upgrade heigh to start download upgrade file and start whaiting loop
+PREP_OFFSET=50 # number of blocks before upgrade height, to start download upgrade file and start whaiting loop
 # -- CONFIG ZONE END --
 
 echo "-------- $(date +"%d-%m-%Y %H:%M") start upgrade check --------"
