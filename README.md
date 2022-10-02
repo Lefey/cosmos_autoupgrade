@@ -16,5 +16,5 @@ and then make symbolic link from new binary folder to current folder.
 For example. script will do
 ```
 rm -rf /root/.gaiad/current
-ln -s /root/.gaiad/new_ver_1.1 /root/.gaiad/current
+ln -s /root/.gaiad/upgrades/new_ver_1.1 /root/.gaiad/current
 ```
