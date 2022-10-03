@@ -10,8 +10,8 @@ PREP_OFFSET=50 # number of blocks before upgrade height, to start download upgra
 # -- CONFIG ZONE END --
 
 echo "-------- $(date +"%d-%m-%Y %H:%M") start upgrade check --------"
-voting_upgrade_proposal=$(${BIN} query gov proposals --status votingperiod --output json 2>/dev/null|jq -r '[.proposals[]|select(.content."@type"=="/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal")]|max_by(.proposal_id|tonumber)')
-passed_upgrade_proposal=$(${BIN} query gov proposals --status passed --output json 2>/dev/null|jq -r '[.proposals[]|select(.content."@type"=="/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal")]|max_by(.proposal_id|tonumber)')
+voting_upgrade_proposal=$(${BIN} query gov proposals --status VotingPeriod --output json 2>/dev/null|jq -r '[.proposals[]|select(.content."@type"=="/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal")]|max_by(.proposal_id|tonumber)')
+passed_upgrade_proposal=$(${BIN} query gov proposals --status Passed --output json 2>/dev/null|jq -r '[.proposals[]|select(.content."@type"=="/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal")]|max_by(.proposal_id|tonumber)')
 upgrade_height=$(echo ${passed_upgrade_proposal}|jq -r '.content.plan.height')
 current_height=$(${BIN} status|jq -r '.SyncInfo.latest_block_height')
 if [[ -n ${voting_upgrade_proposal} ]]; then
@@ -34,15 +34,20 @@ if [[ -n ${upgrade_height} ]] && [[ ${current_height} -gt ${upgrade_height}-${PR
         mkdir -p ${UPGRADE_PATH}/${upgrade_name} && echo "Make new folder for upgrade: ${UPGRADE_PATH}/${upgrade_name}" || echo "ERROR creating dir ${UPGRADE_PATH}/${upgrade_name}"
         wget -q ${upgrade_binary} -O ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz && echo "Downloaded upgrade file to ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz" || echo "ERROR downloading upgrade file"
         sum=$(echo ${upgrade_binary}|sed -En 's/^.+sha256:(.+)/\1/p')
-        echo "sha256sum of downloaded upgrade file must be ${sum}"
-        if [[ $(sha256sum ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz) = "${sum}  ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz" ]]; then
+        if [[ -n ${sum} ]]; then echo "sha256sum of downloaded upgrade file must be ${sum}"; fi
+        if [[ -n ${sum} ]] && [[ $(sha256sum ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz) = "${sum}  ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz" ]]; then
                 echo "sha256sum of downloaded file is OK"
                 chmod +x ${UPGRADE_PATH}/${upgrade_name}/$(tar -xvf ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz -C ${UPGRADE_PATH}/${upgrade_name}/) && echo "Unpack and make executable" || echo "ERROR unpacking downloaded file ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz"
                 rm ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz
-        else
+        elif [[ -n ${sum} ]] && [[ $(sha256sum ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz) != "${sum}  ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz" ]]; then
                 echo "ERROR: sha256sum of downloaded file is NOT OK"
                 exit 1
+        elif [[ -z ${sum} ]]; then
+                chmod +x ${UPGRADE_PATH}/${upgrade_name}/$(tar -xvf ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz -C ${UPGRADE_PATH}/${upgrade_name}/) && echo "Unpack and make executable" || echo "ERROR unpacking downloaded file ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz"
+                rm ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz
+                echo "Upgrade file downloaded and unpacked"
         fi
+
         for ((;;)); do
                 current_height=$(${BIN} status|jq -r '.SyncInfo.latest_block_height')
                 echo "Current height: ${current_height}, will upgrade to ${upgrade_name} at height: ${upgrade_height}"
