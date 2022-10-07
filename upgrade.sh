@@ -31,19 +31,19 @@ if [[ -n ${upgrade_height} ]] && [[ ${current_height} -gt ${upgrade_height}-${PR
                 echo "Start upgrade preparations"
         fi
         echo "Download link: ${upgrade_binary}"
-        mkdir -p ${UPGRADE_PATH}/${upgrade_name} && echo "Make new folder for upgrade: ${UPGRADE_PATH}/${upgrade_name}" || echo "ERROR creating dir ${UPGRADE_PATH}/${upgrade_name}"
-        wget -q ${upgrade_binary} -O ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz && echo "Downloaded upgrade file to ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz" || echo "ERROR downloading upgrade file"
+        mkdir -p ${UPGRADE_PATH}/${upgrade_name} && echo "Make new folder for upgrade: ${UPGRADE_PATH}/${upgrade_name}" || { echo "ERROR creating dir ${UPGRADE_PATH}/${upgrade_name}"; exit 1; }
+        wget -q ${upgrade_binary} -O ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz && echo "Downloaded upgrade file to ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz" || { echo "ERROR downloading upgrade file"; exit 1; }
         sum=$(echo ${upgrade_binary}|sed -En 's/^.+sha256:(.+)/\1/p')
         if [[ -n ${sum} ]]; then echo "sha256sum of downloaded upgrade file must be ${sum}"; fi
         if [[ -n ${sum} ]] && [[ $(sha256sum ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz) = "${sum}  ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz" ]]; then
                 echo "sha256sum of downloaded file is OK"
-                chmod +x ${UPGRADE_PATH}/${upgrade_name}/$(tar -xvf ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz -C ${UPGRADE_PATH}/${upgrade_name}/) && echo "Unpack and make executable" || echo "ERROR unpacking downloaded file ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz"
+                chmod +x ${UPGRADE_PATH}/${upgrade_name}/$(tar -xvf ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz -C ${UPGRADE_PATH}/${upgrade_name}/) && echo "Unpack and make executable" || { echo "ERROR unpacking downloaded file ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz"; exit 1; }
                 rm ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz
         elif [[ -n ${sum} ]] && [[ $(sha256sum ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz) != "${sum}  ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz" ]]; then
                 echo "ERROR: sha256sum of downloaded file is NOT OK"
                 exit 1
         elif [[ -z ${sum} ]]; then
-                chmod +x ${UPGRADE_PATH}/${upgrade_name}/$(tar -xvf ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz -C ${UPGRADE_PATH}/${upgrade_name}/) && echo "Unpack and make executable" || echo "ERROR unpacking downloaded file ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz"
+                chmod +x ${UPGRADE_PATH}/${upgrade_name}/$(tar -xvf ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz -C ${UPGRADE_PATH}/${upgrade_name}/) && echo "Unpack and make executable" || { echo "ERROR unpacking downloaded file ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz"; exit 1; }
                 rm ${UPGRADE_PATH}/${upgrade_name}/upgrade.tar.gz
                 echo "Upgrade file downloaded and unpacked"
         fi
@@ -55,7 +55,7 @@ if [[ -n ${upgrade_height} ]] && [[ ${current_height} -gt ${upgrade_height}-${PR
                         echo "Upgrade height has come, upgrading..."
                         rm -rf ${UPGRADE_PATH}/current && echo "Old symbolic link to binary removed"
                         ln -s ${UPGRADE_PATH}/${upgrade_name} ${UPGRADE_PATH}/current && echo "New symbolic link to binary version ${upgrade_name} was set"
-                        sudo systemctl restart ${SERVICE} && echo "Service ${SERVICE} restarted" || echo "ERROR: service ${SERVICE} NOT restarted!"
+                        sudo systemctl restart ${SERVICE} && echo "Service ${SERVICE} restarted" || { echo "ERROR: service ${SERVICE} NOT restarted!"; exit 1; }
                         sleep 30
                         current_height=$(${BIN} status|jq -r '.SyncInfo.latest_block_height')
                         if [[ ${current_height} -gt ${upgrade_height} ]]; then
