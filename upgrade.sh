@@ -19,7 +19,7 @@ if [[ -n ${voting_upgrade_proposal} ]]; then
         echo "${voting_upgrade_proposal_info}"
 #        curl -s -X POST -H 'Content-Type: application/json' -d '{"chat_id":"'"${CHAT_ID}"'", "text": "'"${voting_upgrade_proposal_info}"'", "parse_mode": "html"}' https://api.telegram.org/bot$BOT_KEY/sendMessage > /dev/null 2>&1
 fi
-if [[ -n ${upgrade_height} ]] && [[ ${current_height} -gt ${upgrade_height}-${PREP_OFFSET} ]] && [[ ${current_height} -lt ${upgrade_height} ]]; then
+if [[ -n ${upgrade_height} ]] && [[ ${current_height} -gt ${upgrade_height}-${PREP_OFFSET} ]] && [[ ${current_height} -le ${upgrade_height} ]]; then
         upgrade_binary=$(echo ${passed_upgrade_proposal}|jq -r '.content.plan.info'|jq -r ".binaries.\"linux/"$(dpkg-architecture -q DEB_BUILD_ARCH)\")
         upgrade_name=$(echo ${passed_upgrade_proposal}|jq -r '.content.plan.name')
         if [[ -z ${upgrade_binary} ]]; then
